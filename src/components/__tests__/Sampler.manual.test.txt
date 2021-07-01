@@ -1,0 +1,33 @@
+{
+Move BPM Slider
+Expect BPM reading to change accordingly
+}
+
+{
+Move Rate Slider
+Expect Rate reading to change accordingly
+}
+
+{
+Press Start
+Expect the red thing to follow along
+
+Press Stop
+Expect the red thing to dissapear
+}
+
+{
+Select a couple pads
+Expect to turn yellow
+Expect no sound
+
+Press Start
+Expect the red thing to follow
+Expect the Kick to sound off on time
+
+Move bpm Slider
+Expect the red thing and sound to speed up or slow down accordingly
+
+Move rate Slider
+Expect the sounds to change accordingly
+}
