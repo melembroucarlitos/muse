@@ -1,0 +1,14 @@
+__authRouteTests__
+Hit duplicate username
+Hit duplicate email
+Send unvalidated shit
+send the correctness
+
+__indexTests__
+(combinatorics)
+Test with non existing DB
+test with non existing user
+
+username: woahBlackBetty
+email: test@email.com
+password: P@ssw0RD!1zl0ngg_

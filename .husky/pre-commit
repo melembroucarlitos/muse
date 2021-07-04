@@ -1,4 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-yarn lint-staged && yarn test:unit && yarn test:e2e && git add cypress/videos/** && git add cypress/screenshots/**
+yarn lint-staged && yarn test:components && yarn test:e2e && git add cypress/videos/**
