@@ -3,31 +3,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-param-reassign */
 import { FC, useEffect, useRef, useState } from 'react';
-import Kick from '../../public/samples/TrapDrumKits/DeepTrapKit/Kick_08_712.wav';
+import useRefAndState from '@src/hooks/useRefAndState';
+import Kick from '../../assets/samples/TrapDrumKits/DeepTrapKit/Kick_08_712.wav';
 import Grid from './Grid';
 
 // TODO: Implement live grid update functionality
 const Sampler: FC = () => {
-  const [grid, setGrid] = useState<boolean[][]>(Array(16).fill(Array(4).fill(false)));
-  const gridCopy = useRef<boolean[][]>(Array(16).fill(Array(4).fill(false)));
-  const gridUpdate = (newGrid: boolean[][]) => {
-    gridCopy.current = newGrid;
-    setGrid(newGrid);
-  };
-
-  const [bpm, setBpm] = useState<number>(80);
-  const bpmCopy = useRef<number>(80);
-  const bpmUpdate = (newBpm: number) => {
-    bpmCopy.current = newBpm;
-    setBpm(newBpm);
-  };
-
-  const [playbackRate, setPlaybackRate] = useState<number>(1);
-  const playbackRateCopy = useRef<number>(1);
-  const playBackRateUpdate = (newPlaybackRate: number) => {
-    playbackRateCopy.current = newPlaybackRate;
-    setPlaybackRate(newPlaybackRate);
-  };
+  const [grid, gridCopy, gridUpdate] = useRefAndState<boolean[][]>(Array(16).fill(Array(4).fill(false)));
+  const [bpm, bpmCopy, bpmUpdate] = useRefAndState<number>(80);
+  const [playbackRate, playbackRateCopy, playbackRateUpdate] = useRefAndState<number>(1);
 
   const [play, setPlay] = useState<boolean>(true);
 
@@ -82,26 +66,6 @@ const Sampler: FC = () => {
 
     return sampleSource;
   };
-  // LOADING SAMPLE HOOK BEGIN --
-  // eslint-disable-next-line no-undef
-  const getFile = async (file: string, audioContext: AudioContext) => {
-    const byteCharacters = atob(file.slice(24));
-    const byteNumbers = new Array(byteCharacters.length);
-
-    for (let i = 0; i < byteCharacters.length; i += 1) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-
-    const byteArray = new Uint8Array(byteNumbers);
-
-    const boobs = new Blob([byteArray], { type: 'audio/basic' });
-    const arrayBuffer = await boobs.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-    return audioBuffer;
-  };
-
-  // LOADING SAMPLE HOOK END
 
   // SETTING UP SEQUENCER BEGIN
   const AdvanceNote = () => {
@@ -129,6 +93,25 @@ const Sampler: FC = () => {
     setTimerID(window.setTimeout(scheduler, lookahead));
   };
   // SETTING UP SEQUENCER END
+
+  // LOADING SAMPLES HOOK BEGIN --
+  const getFile = async (file: string, audioContext: AudioContext) => {
+    const byteCharacters = atob(file.slice(24));
+    const byteNumbers = new Array(byteCharacters.length);
+
+    for (let i = 0; i < byteCharacters.length; i += 1) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+
+    const boobs = new Blob([byteArray], { type: 'audio/basic' });
+    const arrayBuffer = await boobs.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+    return audioBuffer;
+  };
+  // LOADING SAMPLES HOOK END
 
   // sets the audio context and sample on component mount
   useEffect(() => {
@@ -174,7 +157,7 @@ const Sampler: FC = () => {
           min="0.1"
           max="2"
           value={playbackRate}
-          onChange={(ev) => playBackRateUpdate(parseFloat(ev.target.value))}
+          onChange={(ev) => playbackRateUpdate(parseFloat(ev.target.value))}
           step="0.1"
           className="ml-1"
         />
