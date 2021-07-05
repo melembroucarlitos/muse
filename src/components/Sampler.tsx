@@ -4,26 +4,28 @@
 /* eslint-disable no-param-reassign */
 import { FC, useEffect, useRef, useState } from 'react';
 import useRefAndState from '@src/hooks/useRefAndState';
+import { mod } from '@src/utils/misc';
+import HiHat from '../../assets/samples/TrapDrumKits/DeepTrapKit/HiHat_05_712.wav';
 import Kick from '../../assets/samples/TrapDrumKits/DeepTrapKit/Kick_08_712.wav';
+import Snare from '../../assets/samples/TrapDrumKits/DeepTrapKit/Snare_06_712.wav';
 import Grid from './Grid';
 
-// TODO: Implement live grid update functionality
+// TODO: implement useSample hook
 const Sampler: FC = () => {
-  const [grid, gridCopy, gridUpdate] = useRefAndState<boolean[][]>(Array(16).fill(Array(4).fill(false)));
+  const [grid, gridCopy, gridUpdate] = useRefAndState<boolean[][]>(Array(16).fill(Array(3).fill(false)));
   const [bpm, bpmCopy, bpmUpdate] = useRefAndState<number>(80);
   const [playbackRate, playbackRateCopy, playbackRateUpdate] = useRefAndState<number>(1);
 
-  const [play, setPlay] = useState<boolean>(true);
+  const [kickSample, setKickSample] = useState<AudioBuffer>();
+  const [hiHatSample, setHiHatSample] = useState<AudioBuffer>();
+  const [snareSample, setSnareSample] = useState<AudioBuffer>();
 
-  const [testSample, setTestSample] = useState<AudioBuffer>();
-  const testAudioCtx = useRef<any>();
-  const setTestAudioCtx = (x: any) => {
-    testAudioCtx.current = x;
+  const audioCtx = useRef<any>();
+  const setAudioCtx = (x: any) => {
+    audioCtx.current = x;
   };
 
-  // UTILS BEGIN
-  const mod = (a: number, n: number): number => ((a % n) + n) % n;
-  // UTILS END
+  const [play, setPlay] = useState<boolean>(true);
 
   // SEQUENCER STATE BEGIN
   const lookahead = 25.0; // How frequently to call scheduling function (in milliseconds)
@@ -57,11 +59,14 @@ const Sampler: FC = () => {
   };
   // SEQUENCER STATE END
 
-  const playKick = (time = 0) => {
-    const sampleSource = testAudioCtx.current.createBufferSource();
-    sampleSource.buffer = testSample;
-    sampleSource.playbackRate.value = playbackRateCopy.current;
-    sampleSource.connect(testAudioCtx.current.destination);
+  // TODO: Inject the dependency and den curry da bitch
+  const playSample = (audioCtxSample: AudioContext) => (sample: AudioBuffer) => (playbackRateSample: number) => (
+    time = 0
+  ) => {
+    const sampleSource = audioCtxSample.createBufferSource();
+    sampleSource.buffer = sample;
+    sampleSource.playbackRate.value = playbackRateSample;
+    sampleSource.connect(audioCtxSample.destination);
     sampleSource.start(time);
 
     return sampleSource;
@@ -79,13 +84,24 @@ const Sampler: FC = () => {
 
   const scheduleNote = (beatNumber: number, time: number) => {
     if (gridCopy.current[beatNumber][0]) {
-      playKick(time);
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      playSample(audioCtx.current)(kickSample!)(playbackRateCopy.current)(time);
+    }
+
+    if (gridCopy.current[beatNumber][1]) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      playSample(audioCtx.current)(snareSample!)(playbackRateCopy.current)(time);
+    }
+
+    if (gridCopy.current[beatNumber][2]) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      playSample(audioCtx.current)(hiHatSample!)(playbackRateCopy.current)(time);
     }
   };
 
   const scheduler = () => {
     // while there are notes that will need to play before the next interval, schedule them and advance the pointer.
-    while (nextNoteTime.current < testAudioCtx.current.currentTime + scheduleAheadTime) {
+    while (nextNoteTime.current < audioCtx.current.currentTime + scheduleAheadTime) {
       scheduleNote(currentNoteIdx.current, nextNoteTime.current);
       AdvanceNote();
     }
@@ -94,8 +110,10 @@ const Sampler: FC = () => {
   };
   // SETTING UP SEQUENCER END
 
+  // A loading samples hook would take in a b64 file...
+  // and return a play file function
   // LOADING SAMPLES HOOK BEGIN --
-  const getFile = async (file: string, audioContext: AudioContext) => {
+  const getFile = (audioContext: AudioContext) => async (file: string): Promise<AudioBuffer> => {
     const byteCharacters = atob(file.slice(24));
     const byteNumbers = new Array(byteCharacters.length);
 
@@ -116,22 +134,29 @@ const Sampler: FC = () => {
   // sets the audio context and sample on component mount
   useEffect(() => {
     const { AudioContext } = window;
-    const audioCtx = new AudioContext();
+    const newAudioCtx = new AudioContext();
+    setAudioCtx(newAudioCtx);
 
-    const setUpSample = (file: string): Promise<AudioBuffer> => getFile(file, audioCtx);
-
+    const setUpSample = getFile(newAudioCtx);
     setUpSample(Kick).then((sample) => {
-      setTestSample(sample);
-      setTestAudioCtx(audioCtx);
+      setKickSample(sample);
+    });
+
+    setUpSample(HiHat).then((sample) => {
+      setHiHatSample(sample);
+    });
+
+    setUpSample(Snare).then((sample) => {
+      setSnareSample(sample);
     });
   }, []);
 
   const playPlay = () => {
-    if (typeof testAudioCtx.current !== 'undefined') {
+    if (typeof audioCtx.current !== 'undefined') {
       if (play) {
-        if (testAudioCtx.current.state === 'suspended') testAudioCtx.current.resume();
+        if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
         setCurrentNoteIdx(0);
-        setNextNoteTime(testAudioCtx.current.currentTime);
+        setNextNoteTime(audioCtx.current.currentTime);
         scheduler();
         setPlay(!play);
       } else {
@@ -144,7 +169,16 @@ const Sampler: FC = () => {
   return (
     <div>
       <div className="flex">
-        <input type="range" min="1" max="200" value={bpm} onChange={(e) => bpmUpdate(parseFloat(e.target.value))} />
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+        <label htmlFor="bpm">Tempo</label>
+        <input
+          type="range"
+          min="1"
+          id="bpm"
+          max="200"
+          value={bpm}
+          onChange={(e) => bpmUpdate(parseFloat(e.target.value))}
+        />
         <span className="ml-1">{bpm} bpm</span>
       </div>
       <div className="flex">
@@ -163,7 +197,7 @@ const Sampler: FC = () => {
         />
         <span className="ml-1">{playbackRate}</span>
       </div>
-      <Grid grid={grid} setGrid={gridUpdate} labels={['Kick', 'Snare', 'HiHat', 'Stick']} currentBeat={currentBeat} />
+      <Grid grid={grid} setGrid={gridUpdate} labels={['Kick', 'Snare', 'HiHat']} currentBeat={currentBeat} />
       <button
         type="button"
         className="px-1 mt-2 bg-gray-400 rounded-sm"

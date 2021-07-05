@@ -31,3 +31,21 @@ Expect the red thing and sound to speed up or slow down accordingly
 Move rate Slider
 Expect the sounds to change accordingly
 }
+
+{
+Select a couple pads
+Expect to turn yellow
+Expect no sound
+
+Press Start
+Expect the red thing to follow
+Expect the Kick to sound off on time
+Expect HiHat to sound off on time
+Expect Snare to sound off on time
+
+Move bpm Slider
+Expect the red thing and sound to speed up or slow down accordingly
+
+Move rate Slider
+Expect the sounds to change accordingly
+}
