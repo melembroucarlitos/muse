@@ -18,3 +18,13 @@ export const registerFormSchema = yup.object().shape({
     .matches(/\W|_/, 'password must have at least one special character') // This matches any non latin characters as well, so you know becareful son
     .required(),
 });
+
+export type LoginFormData = {
+  username: string;
+  password: string;
+};
+
+export const loginFormSchema = yup.object().shape({
+  username: yup.string().required(),
+  password: yup.string().required(),
+});

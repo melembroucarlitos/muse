@@ -1,21 +1,22 @@
 import { classToPlain, Exclude } from 'class-transformer';
 import { BaseEntity, Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
+// TODO: Figure out the testing incompatability bull
 @Entity('users')
 class User extends BaseEntity {
   @PrimaryGeneratedColumn('increment')
-  id!: string;
+  id!: number;
 
   @Index()
-  @Column({ unique: true, type: 'char varying' })
+  @Column({ unique: true })
   email!: string;
 
   @Index()
-  @Column({ unique: true, type: 'char varying' })
+  @Column({ unique: true })
   username!: string;
 
   @Exclude()
-  @Column({ type: 'char varying' })
+  @Column()
   password!: string;
 
   @CreateDateColumn()

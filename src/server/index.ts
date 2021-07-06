@@ -13,7 +13,7 @@ import { createConnection } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import authRoutes from './routes/authenticate';
 
-// TODO: console.log redis connections, Get test:server working, Checkout concurrently, --script to make sure the database is running, --script to make translate manual tests into spec skeletons, --reinforce validation on the database level, --get debugging figured out, --script that automatically replaces secrets in .env file
+// TODO: console.log redis connections, Get test:server working, Checkout concurrently, do away with redundant redis clients --script to make sure the database is running, --script to make translate manual tests into spec skeletons, --reinforce validation on the database level, --get debugging figured out, --script that automatically replaces secrets in .env file
 (async () => {
   dotenv.config();
 

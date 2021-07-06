@@ -12,3 +12,7 @@ test with non existing user
 username: woahBlackBetty
 email: test@email.com
 password: P@ssw0RD!1zl0ngg_
+
+username: wambAhWahm
+email: test12@email.com
+password: P@ssw0RD!1zl0nggerzz_12*
