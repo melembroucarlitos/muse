@@ -6,20 +6,33 @@ import { FC, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DefaultEventsMap } from 'socket.io-client/build/typed-events';
 import UserContext from '@src/contexts/UserContext';
-import { Room as RoomType, RoomPlayersUpdate, RoomState } from '@src/types';
-import Chat from './Chat';
+import { ChatMessage, Room as RoomType, RoomPlayersUpdate, RoomState } from '@src/types';
+import JamSession from './JamSession';
 
 // TODO: Have something going where joining a room and creating a room can't both be open at once and a sweet side slide transition
 // TODO: Have timer that automatically logs someone off a room in they haven't messed around in their turn for a certain amount of time
+// TODO: socket useState refactor, or better yet just const
 const Room: FC = () => {
   const { user } = useContext(UserContext);
   const { username } = user;
   const socket = useRef<Socket<DefaultEventsMap, DefaultEventsMap>>(io('http://localhost:8080'));
 
   const [roomState, setRoomState] = useState<RoomState | null>(null);
+  const [roomMessages, setRoomMessages] = useState<ChatMessage[]>([]);
   const [currentRooms, setCurrentRooms] = useState<RoomType[]>([]);
 
   const [roomCap, setRoomCap] = useState<number>(2);
+
+  const updateRoomState = (newRoomState: RoomState | null) => {
+    if (newRoomState === null) {
+      setRoomState(null);
+      setRoomMessages([]);
+    } else {
+      console.log('updating roomMessages:', newRoomState.messages);
+      setRoomState(newRoomState);
+      setRoomMessages(newRoomState.messages);
+    }
+  };
 
   useEffect(() => {
     socket.current.emit('current rooms');
@@ -34,7 +47,7 @@ const Room: FC = () => {
 
     socket.current.on('room init', (roomData: RoomState) => {
       console.log('room was initialized');
-      setRoomState(roomData);
+      updateRoomState(roomData);
     });
 
     socket.current.on('room players update', ({ currentPlayers, playersHistory }: RoomPlayersUpdate) => {
@@ -45,15 +58,17 @@ const Room: FC = () => {
         playersHistory,
       } as RoomState;
 
-      setRoomState(ready);
+      updateRoomState(ready);
     });
 
-    socket.current.on('session update', () => {
-      console.log('session state was updated');
-      // Update session history
-      // Update who's turn it is
-      // Update the gui
-      // If it's your turn, unlock the gui
+    socket.current.on('room messaged', (messages: ChatMessage[]) => {
+      console.log('room was messaged', messages);
+      if (roomState !== null) {
+        updateRoomState({
+          ...roomState,
+          messages,
+        });
+      }
     });
   }
 
@@ -132,43 +147,14 @@ const Room: FC = () => {
           </table>
         </div>
       </div>
-      <div className={`${roomState !== null ? 'block' : 'hidden'}`}>
-        {/* current session info... current player's turn, session history, chat, leave session (if you're the only player, then close session) */}
-        <Chat />
-        {roomState?.currentPlayers.length === 1 ? (
-          <button
-            type="button"
-            onClick={() => {
-              console.log('We are now closing the room');
-
-              socket.current.emit('close room', {
-                id: roomState.id,
-                username,
-              });
-
-              setRoomState(null);
-            }}
-          >
-            Close Session
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              console.log('We are now leaving the room');
-
-              socket.current.emit('leave room', {
-                username,
-                id: roomState?.id,
-              });
-
-              setRoomState(null);
-            }}
-          >
-            Leave Session
-          </button>
-        )}
-      </div>
+      {roomState === null ? null : (
+        <JamSession
+          roomState={roomState}
+          messages={roomMessages}
+          updateRoomState={updateRoomState}
+          socket={socket.current}
+        />
+      )}
     </div>
   );
 };

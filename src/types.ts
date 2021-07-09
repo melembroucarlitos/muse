@@ -1,8 +1,7 @@
 export type ChatMessage = {
   username: string;
   message: string;
-  // Add room to this
-  // Add time to this
+  time: Date;
 };
 
 export type RoomState = {

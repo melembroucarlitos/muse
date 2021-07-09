@@ -14,11 +14,11 @@ import redis from 'redis';
 import { Server, Socket } from 'socket.io';
 import { createConnection } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage, Room, RoomState } from '@src/types';
+import { Room, RoomState } from '@src/types';
 import { mod } from '../utils/misc';
 import authRoutes from './routes/authenticate';
 
-// TODO: console.log redis connections, Get test:server working, Checkout concurrently, do away with redundant redis clients --script to make sure the database is running, --script to make translate manual tests into spec skeletons, --reinforce validation on the database level, --get debugging figured out, --script that automatically replaces secrets in .env file
+// TODO: socket typings, console.log redis connections, Get test:server working, Checkout concurrently, do away with redundant redis clients --script to make sure the database is running, --script to make translate manual tests into spec skeletons, --reinforce validation on the database level, --get debugging figured out, --script that automatically replaces secrets in .env file
 (async () => {
   dotenv.config();
   const { NODE_ENV, PORT, ORIGIN, SESSION_SECRET } = process.env;
@@ -200,34 +200,30 @@ import authRoutes from './routes/authenticate';
       };
 
       await redisJamClient.set(`jam:${input.id}`, JSON.stringify(updatedSession)); // Do we really need to await?? Also, maybe better to use RabbitMQ???
-      io.to(input.id).emit('room messaged', {
+      io.to(input.id).emit('turn played', {
         messages: currentSession.messages.concat([input.message]),
       });
     });
 
     socket.on('message room', async (input) => {
       // Insert check to see if id is even valid
+      console.log('received message', input);
       const currentSessionPrep = await redisJamClient.get(`jam:${input.id}`);
       const currentSession: RoomState = JSON.parse(currentSessionPrep!);
       const time = new Date();
 
       const updatedSession: RoomState = {
         ...currentSession,
-        messages: currentSession.messages.concat([input.message]),
+        messages: currentSession.messages.concat([
+          { message: input.message, time: input.time, username: input.username },
+        ]),
         updatedAt: time,
       };
 
       await redisJamClient.set(`jam:${input.id}`, JSON.stringify(updatedSession)); // Do we really need to await?? Also, maybe better to use RabbitMQ???
-      io.to(input.id).emit('room messaged', {
-        messages: currentSession.messages.concat([input.message]),
-      });
+      io.to(input.id).emit('room messaged', updatedSession.messages);
     });
-
-    // TODO: Clean this poor son of a bitch out
-    socket.on('message', (message: ChatMessage) => {
-      console.log('MESSAGE!', message);
-      io.emit('message', message);
-    });
+    // TOPONDER: I want there to be guaranteed consistency between server and clients state. Should I just send over a message, or the entire state
   });
 
   // clean up your sockets upon disconnect

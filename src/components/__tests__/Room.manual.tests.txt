@@ -19,7 +19,7 @@
 }
 
 { //Rooms can be destroyed
- a: Log In
+    a: Log In
     b: Log In
     c: Log In
     a: Max Players(5) -> Create Room
@@ -32,4 +32,18 @@
     c: Expect room to disappear
 }
 
-//Messages are only sent to those who are in the room
+
+{ //Messages are only sent to those who are in the room
+    a: Log In
+    b: Log In
+    c: Log In
+    d: Log In
+    a: Max Players(2) -> Create Room *roomA
+    b: Join Room *roomA
+    c: Max Players(2) -> Create Room *roomB
+    d: Join Room *roomA
+    a: Send Message *messageC
+    c: Send Message *messageD
+    b: EXPECT *messageC && ~*messageD
+    d: EXPECT *messageD && ~*messageC
+}
