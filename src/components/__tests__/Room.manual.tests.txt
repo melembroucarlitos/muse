@@ -1,0 +1,35 @@
+{ //Rooms can be created
+    a: Log In
+    b: Log In
+    a: Max Players(5) -> Create Room
+    a: EXPECT play room screen
+    b: EXPECT live update in rooms
+}
+
+{ //Rooms can be joined and left
+    a: Log In
+    b: Log In
+    c: Log In
+    a: Max Players(5) -> Create Room
+    c: Expect live update in rooms
+    b: Join Room
+    c: EXPECT live update in rooms
+    b: Leave Room
+    c: EXPECT live update in rooms
+}
+
+{ //Rooms can be destroyed
+ a: Log In
+    b: Log In
+    c: Log In
+    a: Max Players(5) -> Create Room
+    c: Expect live update in rooms
+    b: Join Room
+    c: EXPECT live update in rooms
+    b: Leave Room
+    c: EXPECT live update in rooms
+    a: Close room
+    c: Expect room to disappear
+}
+
+//Messages are only sent to those who are in the room
