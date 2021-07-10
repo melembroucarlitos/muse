@@ -1,20 +1,46 @@
+/* eslint-disable react/prop-types */
+/* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-param-reassign */
-import { FC, useEffect, useRef, useState } from 'react';
-import useRefAndState from '@src/hooks/useRefAndState';
+import { FC, MutableRefObject, useEffect, useRef, useState } from 'react';
+// import useRefAndState from '@src/hooks/useRefAndState';
 import { mod } from '@src/utils/misc';
 import HiHat from '../../assets/samples/TrapDrumKits/DeepTrapKit/HiHat_05_712.wav';
 import Kick from '../../assets/samples/TrapDrumKits/DeepTrapKit/Kick_08_712.wav';
 import Snare from '../../assets/samples/TrapDrumKits/DeepTrapKit/Snare_06_712.wav';
 import Grid from './Grid';
 
+type SamplerProps = {
+  grid: boolean[][];
+  gridCopy: MutableRefObject<boolean[][]>;
+  gridUpdate: (x: boolean[][]) => void;
+  bpm: number;
+  bpmCopy: MutableRefObject<number>;
+  bpmUpdate: (x: number) => void;
+  playbackRate: number;
+  playbackRateCopy: MutableRefObject<number>;
+  playbackRateUpdate: (x: number) => void;
+  isFrozen: boolean;
+};
+
 // TODO: implement useSample hook
-const Sampler: FC = () => {
-  const [grid, gridCopy, gridUpdate] = useRefAndState<boolean[][]>(Array(16).fill(Array(3).fill(false)));
-  const [bpm, bpmCopy, bpmUpdate] = useRefAndState<number>(80);
-  const [playbackRate, playbackRateCopy, playbackRateUpdate] = useRefAndState<number>(1);
+const Sampler: FC<SamplerProps> = ({
+  grid,
+  gridCopy,
+  gridUpdate,
+  bpm,
+  bpmCopy,
+  bpmUpdate,
+  playbackRate,
+  playbackRateCopy,
+  playbackRateUpdate,
+  isFrozen,
+}) => {
+  // const [grid, gridCopy, gridUpdate] = useRefAndState<boolean[][]>(Array(16).fill(Array(3).fill(false)));
+  // const [bpm, bpmCopy, bpmUpdate] = useRefAndState<number>(80);
+  // const [playbackRate, playbackRateCopy, playbackRateUpdate] = useRefAndState<number>(1);
 
   const [kickSample, setKickSample] = useState<AudioBuffer>();
   const [hiHatSample, setHiHatSample] = useState<AudioBuffer>();
@@ -177,7 +203,8 @@ const Sampler: FC = () => {
           id="bpm"
           max="200"
           value={bpm}
-          onChange={(e) => bpmUpdate(parseFloat(e.target.value))}
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
+          onChange={isFrozen ? () => {} : (e) => bpmUpdate(parseFloat(e.target.value))}
         />
         <span className="ml-1">{bpm} bpm</span>
       </div>
@@ -191,13 +218,20 @@ const Sampler: FC = () => {
           min="0.1"
           max="2"
           value={playbackRate}
-          onChange={(ev) => playbackRateUpdate(parseFloat(ev.target.value))}
+          // eslint-disable-next-line @typescript-eslint/no-empty-function
+          onChange={isFrozen ? () => {} : (ev) => playbackRateUpdate(parseFloat(ev.target.value))}
           step="0.1"
           className="ml-1"
         />
         <span className="ml-1">{playbackRate}</span>
       </div>
-      <Grid grid={grid} setGrid={gridUpdate} labels={['Kick', 'Snare', 'HiHat']} currentBeat={currentBeat} />
+      <Grid
+        grid={grid}
+        setGrid={gridUpdate}
+        labels={['Kick', 'Snare', 'HiHat']}
+        currentBeat={currentBeat}
+        isFrozen={isFrozen}
+      />
       <button
         type="button"
         className="px-1 mt-2 bg-gray-400 rounded-sm"

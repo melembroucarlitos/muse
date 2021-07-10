@@ -47,3 +47,29 @@
     b: EXPECT *messageC && ~*messageD
     d: EXPECT *messageD && ~*messageC
 }
+
+{ //Game states are passed back and forth, with the 3 changes limit
+    a: Log In
+    b: Log In
+    a: Max Players(3) -> Create Room *roomA
+    b: Join Room *roomA
+    b: EXPECT TO BE FROZEN
+    a: Make changes
+    a: Submit Turn
+    a: EXPECT TO BE FROZEN
+    b: EXPECT TO UNFREEZE
+    b: EXPECT TO SEE CHANGES
+    b: EXPECT TO UPDATE CURRENT PLAYERS DISPLAY
+    b: Make changes
+    b: Submit Turn
+    b: EXPECT TO BE FROZEN
+    a: EXPECT TO UNFREEZE
+    a: EXPECT TO SEE CHANGES
+    a: EXPECT TO UPDATE CURRENT PLAYERS DISPLAY
+}
+
+// Test current player display on player leave
+
+// Test limited number of moves
+
+// Test history display

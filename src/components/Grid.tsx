@@ -8,9 +8,10 @@ type GridProps = {
   setGrid: Dispatch<SetStateAction<boolean[][]>> | any;
   labels: string[];
   currentBeat: number;
+  isFrozen: boolean;
 };
 
-const Grid: FC<GridProps> = ({ grid, setGrid, labels, currentBeat }) => {
+const Grid: FC<GridProps> = ({ grid, setGrid, labels, currentBeat, isFrozen }) => {
   return (
     <div className="flex">
       <div className="flex flex-col">
@@ -33,16 +34,20 @@ const Grid: FC<GridProps> = ({ grid, setGrid, labels, currentBeat }) => {
               className={`mt-1 w-4 h-4 focus:outline-none border-2 
                          ${beatIdx === currentBeat ? 'border-red-900' : 'border-gray-900'}
                          ${btn ? 'bg-yellow-500' : 'bg-gray-600'}`}
-              onClick={() =>
-                setGrid(
-                  grid.map((beet, beatIndex) =>
-                    beet.map((_, noteIndex) =>
-                      beatIndex === beatIdx && noteIndex === btnIdx
-                        ? !grid[beatIndex][noteIndex]
-                        : grid[beatIndex][noteIndex]
-                    )
-                  )
-                )
+              onClick={
+                isFrozen
+                  ? // eslint-disable-next-line @typescript-eslint/no-empty-function
+                    () => {}
+                  : () =>
+                      setGrid(
+                        grid.map((beet, beatIndex) =>
+                          beet.map((_, noteIndex) =>
+                            beatIndex === beatIdx && noteIndex === btnIdx
+                              ? !grid[beatIndex][noteIndex]
+                              : grid[beatIndex][noteIndex]
+                          )
+                        )
+                      )
               }
             />
           ))}

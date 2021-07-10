@@ -49,8 +49,6 @@ import authRoutes from './routes/authenticate';
   });
 
   io.on('connect', (socket: Socket) => {
-    console.log('we connected:');
-
     const liveRoomsUpdate = async () => {
       // io.sockets.adapter.rooms
       const roomKeys = await redisJamClient.keys('jam:*');
@@ -78,7 +76,7 @@ import authRoutes from './routes/authenticate';
         players: [input.username],
         currentPlayers: [input.username],
         currentTurn: input.username,
-        gameStates: [Array(16).fill(Array(3).fill(false))],
+        gameStates: [input.gameState],
         playersHistory: [{ username: input.username, type: 'create', time }],
         messages: [],
         createdBy: input.username,
@@ -191,6 +189,8 @@ import authRoutes from './routes/authenticate';
       const currentSession: RoomState = JSON.parse(currentSessionPrep!);
       const time = new Date();
 
+      console.log('turn played', input);
+
       const { currentPlayers } = currentSession;
       const updatedSession: RoomState = {
         ...currentSession,
@@ -199,9 +199,12 @@ import authRoutes from './routes/authenticate';
         updatedAt: time,
       };
 
+      console.log('updatedSession', updatedSession);
+
       await redisJamClient.set(`jam:${input.id}`, JSON.stringify(updatedSession)); // Do we really need to await?? Also, maybe better to use RabbitMQ???
       io.to(input.id).emit('turn played', {
-        messages: currentSession.messages.concat([input.message]),
+        currentTurn: updatedSession.currentTurn,
+        gameStates: updatedSession.gameStates,
       });
     });
 

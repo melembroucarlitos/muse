@@ -1,8 +1,9 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable jsx-a11y/no-onchange */
 /* eslint-disable no-console */
 /* eslint-disable array-callback-return */
 /* eslint-disable react/no-array-index-key */
-import { FC, useContext, useEffect, useRef, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { DefaultEventsMap } from 'socket.io-client/build/typed-events';
 import UserContext from '@src/contexts/UserContext';
@@ -12,7 +13,19 @@ import JamSession from './JamSession';
 // TODO: Have something going where joining a room and creating a room can't both be open at once and a sweet side slide transition
 // TODO: Have timer that automatically logs someone off a room in they haven't messed around in their turn for a certain amount of time
 // TODO: socket useState refactor, or better yet just const
-const Room: FC = () => {
+
+type RoomProps = {
+  grid: boolean[][];
+  gridUpdate: (x: boolean[][]) => void;
+  bpm: number;
+  bpmUpdate: (x: number) => void;
+  playbackRate: number;
+  playbackRateUpdate: (x: number) => void;
+  setIsFrozen: Dispatch<SetStateAction<boolean>>;
+};
+
+// eslint-disable-next-line react/prop-types
+const Room: FC<RoomProps> = ({ grid, bpm, playbackRate, setIsFrozen, gridUpdate, bpmUpdate, playbackRateUpdate }) => {
   const { user } = useContext(UserContext);
   const { username } = user;
   const socket = useRef<Socket<DefaultEventsMap, DefaultEventsMap>>(io('http://localhost:8080'));
@@ -23,14 +36,18 @@ const Room: FC = () => {
 
   const [roomCap, setRoomCap] = useState<number>(2);
 
+  // I need to rethink the utility of this abstraction
   const updateRoomState = (newRoomState: RoomState | null) => {
     if (newRoomState === null) {
       setRoomState(null);
       setRoomMessages([]);
+      setIsFrozen(false);
     } else {
       console.log('updating roomMessages:', newRoomState.messages);
       setRoomState(newRoomState);
       setRoomMessages(newRoomState.messages);
+      if (newRoomState.currentTurn === username) setIsFrozen(false);
+      else setIsFrozen(true);
     }
   };
 
@@ -48,6 +65,9 @@ const Room: FC = () => {
     socket.current.on('room init', (roomData: RoomState) => {
       console.log('room was initialized');
       updateRoomState(roomData);
+      gridUpdate(roomData.gameStates[roomData.gameStates.length - 1].grid);
+      bpmUpdate(roomData.gameStates[roomData.gameStates.length - 1].bpm);
+      playbackRateUpdate(roomData.gameStates[roomData.gameStates.length - 1].playbackRate);
     });
 
     socket.current.on('room players update', ({ currentPlayers, playersHistory }: RoomPlayersUpdate) => {
@@ -58,16 +78,39 @@ const Room: FC = () => {
         playersHistory,
       } as RoomState;
 
-      updateRoomState(ready);
+      updateRoomState(ready); // This doesn't really need to affect isFrozen
     });
 
     socket.current.on('room messaged', (messages: ChatMessage[]) => {
       console.log('room was messaged', messages);
       if (roomState !== null) {
+        // This absolutely does not need to affect isFrozen
         updateRoomState({
           ...roomState,
           messages,
         });
+      }
+    });
+
+    socket.current.on('turn played', ({ currentTurn, gameStates }) => {
+      if (roomState !== null) {
+        setRoomState({
+          ...roomState,
+          currentTurn,
+          gameStates,
+        });
+
+        gridUpdate(gameStates[gameStates.length - 1].grid);
+        bpmUpdate(gameStates[gameStates.length - 1].bpm);
+        playbackRateUpdate(gameStates[gameStates.length - 1].playbackRate);
+
+        console.log(`you are: ${username} and it's currently ${currentTurn} turn`);
+
+        if (currentTurn === username) {
+          setIsFrozen(false);
+        } else {
+          setIsFrozen(true);
+        }
       }
     });
   }
@@ -84,6 +127,11 @@ const Room: FC = () => {
               socket.current.emit('create room', {
                 username,
                 playersCap: roomCap,
+                gameState: {
+                  grid,
+                  bpm,
+                  playbackRate,
+                },
               });
             }}
           >
@@ -153,6 +201,9 @@ const Room: FC = () => {
           messages={roomMessages}
           updateRoomState={updateRoomState}
           socket={socket.current}
+          bpm={bpm}
+          grid={grid}
+          playbackRate={playbackRate}
         />
       )}
     </div>
